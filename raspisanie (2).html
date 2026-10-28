@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#8f1d24">
+<title>Расписание</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:#efe6ea;min-height:100vh}
+#errbar{display:none;background:#e02020;color:#fff;padding:8px 14px;font-size:13px;position:sticky;top:0;z-index:99}
+.wrap{max-width:760px;margin:0 auto;padding:16px 12px 60px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.back{background:#8f1d24;color:#fff;font-weight:700;padding:10px 18px;border-radius:22px;letter-spacing:.5px;font-size:15px}
+.upd{background:#8f1d24;color:#fff;font-weight:700;padding:10px 16px;border-radius:22px;font-size:14px}
+.tiles{display:flex;gap:10px;flex-wrap:wrap}
+.tile{flex:1;min-width:150px;background:#8f1d24;color:#fff;border-radius:14px;padding:10px 14px;cursor:pointer}
+.tile span{font-size:12px;opacity:.85}
+.tile b{display:block;font-size:17px;margin-top:4px}
+.weekbar{display:flex;gap:8px;align-items:center;margin:14px 0 10px}
+.weekbar .wlabel{flex:1;background:#8f1d24;color:#fff;border-radius:14px;text-align:center;padding:10px;font-weight:700;font-size:15px}
+.wbtn{background:#8f1d24;color:#fff;border:none;border-radius:12px;width:42px;height:42px;font-size:20px;cursor:pointer;flex-shrink:0}
+.days{display:flex;gap:6px;margin-bottom:4px}
+.daytab{flex:1;background:#fff;border:none;border-radius:10px;padding:9px 2px;font-weight:700;cursor:pointer;color:#8f1d24;font-size:13px}
+.daytab.active{background:#8f1d24;color:#fff}
+.dayhead{display:flex;justify-content:space-between;background:#8f1d24;color:#fff;border-radius:14px;padding:10px 16px;font-weight:700;margin:16px 0 10px;font-size:15px}
+.addbtn{width:100%;background:#8f1d24;color:#fff;border:none;border-radius:14px;padding:14px;font-weight:700;font-size:15px;cursor:pointer;margin-top:10px}
+.addbtn:active{opacity:.85}
+.card{background:#fff;border-radius:14px;display:flex;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer;position:relative}
+.tblock{width:86px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:14px;padding:10px 0;flex-shrink:0}
+.tblock i{width:30px;height:2px;background:rgba(255,255,255,.6);border-radius:2px;margin:6px 0}
+.t-lec{background:#2e9e3f}
+.t-pr{background:#f39200}
+.t-lab{background:#9c27b0}
+.cbody{flex:1;padding:10px 34px 10px 12px;min-width:0}
+.cname{font-weight:700;font-size:15px;margin-bottom:4px}
+.tlabel{font-weight:700;margin-right:5px}
+.cmeta{font-size:13px;color:#444;margin:2px 0}
+.chip{display:inline-block;background:#dff3e3;color:#1c5c2a;border-radius:12px;padding:3px 10px;font-size:12px;margin:6px 6px 0 0;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.done{background:#eee;color:#888;text-decoration:line-through}
+.edit{position:absolute;top:8px;right:10px;background:none;border:none;font-size:16px;cursor:pointer;color:#999;padding:4px}
+.empty{color:#999;font-size:14px;text-align:center;padding:10px}
+.calhead{display:flex;justify-content:space-between;align-items:center;margin:26px 0 8px}
+.calhead h3{color:#8f1d24;font-size:17px}
+.calwd{font-size:11px;color:#999;text-align:center;padding-bottom:2px}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.calcell{background:#fff;border-radius:8px;min-height:46px;position:relative;cursor:pointer;padding:4px 6px;font-size:13px;font-weight:600}
+.calcell.today{outline:2px solid #8f1d24}
+.calcell:active{background:#f6e9ec}
+.dots{position:absolute;bottom:4px;left:4px;right:4px;display:flex;gap:2px;flex-wrap:wrap}
+.dot{width:6px;height:6px;border-radius:50%}
+.dot.lec{background:#2e9e3f}
+.dot.pr{background:#f39200}
+.dot.lab{background:#9c27b0}
+.dot.hw{background:#e02020}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal{background:#fff;border-radius:16px;max-width:420px;width:100%;max-height:85vh;overflow:auto;padding:18px}
+.modal h3{color:#8f1d24;margin-bottom:12px;font-size:18px}
+.frow{margin-bottom:10px;position:relative}
+.frow label{display:block;font-size:12px;color:#777;margin-bottom:4px}
+.frow input,.frow textarea{width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:10px;font-size:15px;font-family:inherit;resize:vertical}
+.frow2{display:flex;gap:10px}
+.frow2 .frow{flex:1}
+.typebtns{display:flex;gap:8px;margin-bottom:12px}
+.tbtn{flex:1;border:2px solid #ddd;background:#fff;border-radius:10px;padding:9px 4px;font-weight:700;cursor:pointer;font-size:13px;color:#555}
+.tbtn.sel{color:#fff;border-color:transparent}
+.tbtn.sel.t-lec{background:#2e9e3f}
+.tbtn.sel.t-pr{background:#f39200}
+.tbtn.sel.t-lab{background:#9c27b0}
+.sbtn{display:block;width:100%;text-align:left;padding:8px 10px;border:1px solid #eee;border-radius:8px;background:#fafafa;cursor:pointer;font-size:14px;margin-top:4px}
+.mrow{display:flex;gap:8px;margin-top:12px}
+.btn{flex:1;border:none;border-radius:10px;padding:11px;font-weight:700;cursor:pointer;font-size:14px}
+.btn.primary{background:#8f1d24;color:#fff}
+.btn.ghost{background:#eee;color:#333}
+.btn.danger{background:#fdeaea;color:#a33}
+.hwmeta{font-size:13px;color:#666;margin-bottom:10px}
+.hwrow{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid #f0e5e8}
+.hwrow input{margin-top:3px}
+.hwtext{flex:1;font-size:14px}
+.hwtext.done{color:#999;text-decoration:line-through}
+.hwdel{background:none;border:none;color:#c33;font-size:16px;cursor:pointer;padding:0 4px}
+</style>
+</head>
+<body>
+<div id="errbar"></div>
+<div class="wrap">
+  <div class="topbar">
+    <div class="back">&larr; РАСПИСАНИЕ</div>
+    <div class="upd" id="upd"></div>
+  </div>
+  <div class="tiles" id="tiles">
+    <div class="tile" data-edit="group"><span>Группа</span><b id="tGroup"></b></div>
+    <div class="tile" data-edit="year"><span>Учебный год</span><b id="tYear"></b></div>
+    <div class="tile" data-edit="sem"><span>Семестр</span><b id="tSem"></b></div>
+    <div class="tile" data-edit="week"><span>Текущая неделя</span><b id="tWeek"></b></div>
+  </div>
+  <div class="weekbar">
+    <button class="wbtn" id="prevW">&lsaquo;</button>
+    <div class="wlabel" id="weekLabel"></div>
+    <button class="wbtn" id="nextW">&rsaquo;</button>
+  </div>
+  <div class="days" id="dayTabs"></div>
+  <div id="schedule"></div>
+  <div class="calhead">
+    <button class="wbtn" id="calPrev">&lsaquo;</button>
+    <h3 id="calTitle"></h3>
+    <button class="wbtn" id="calNext">&rsaquo;</button>
+  </div>
+  <div class="calgrid" id="calGrid"></div>
+</div>
+<div id="modal"></div>
+<script>
+'use strict';
+window.onerror = function(m, s, l) {
+  var e = document.getElementById('errbar');
+  if (e) { e.style.display = 'block'; e.textContent = 'Ошибка в приложении: ' + m + ' (строка ' + l + ')'; }
+  return false;
+};
+
+var DN = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+var DNAMES = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+var MNS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+var TYPENAME = { lec: 'Лекция', pr: 'Практика', lab: 'Лабораторная' };
+var TYPECLS = { lec: 't-lec', pr: 't-pr', lab: 't-lab' };
+var TYPEAB = { lec: 'лек', pr: 'пр', lab: 'лаб' };
+
+var state = {
+  meta: { group: 'КИТо-210', year: '2026–2027', sem: 'Осень', semStart: '2026-09-01' },
+  lessons: [],
+  hw: {},
+  subjects: ['Дискретная математика с элементами математической логики','Основы философии','Информационные технологии','Основы алгоритмизации и программирования','Физическая культура'],
+  weekStart: '',
+  selDay: 0,
+  calY: 2026, calM: 9,
+  editId: null,
+  editDate: '',
+  newType: 'lec'
+};
+var LSKEY = 'sched_v3';
+
+function load() {
+  try {
+    var s = localStorage.getItem(LSKEY);
+    if (s) {
+      var o = JSON.parse(s);
+      if (o && o.meta) state.meta = o.meta;
+      if (o && o.lessons) state.lessons = o.lessons;
+      if (o && o.hw) state.hw = o.hw;
+      if (o && o.subjects && o.subjects.length) state.subjects = o.subjects;
+    }
+  } catch (e) {}
+}
+function save() {
+  try {
+    localStorage.setItem(LSKEY, JSON.stringify({ meta: state.meta, lessons: state.lessons, hw: state.hw, subjects: state.subjects }));
+  } catch (e) {}
+}
+
+function pad(n) { return (n < 10 ? '0' : '') + n; }
+function dkey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function parseKey(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+function mondayOf(d) {
+  var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+  return x;
+}
+function addD(key, n) { var d = parseKey(key); d.setDate(d.getDate() + n); return dkey(d); }
+function fmt(d) { return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear(); }
+function fmtKey(k) { return fmt(parseKey(k)); }
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function findLesson(id) {
+  for (var i = 0; i < state.lessons.length; i++) {
+    if (state.lessons[i].id == id) return state.lessons[i];
+  }
+  return null;
+}
+
+function renderTop() {
+  document.getElementById('tGroup').textContent = state.meta.group;
+  document.getElementById('tYear').textContent = state.meta.year;
+  document.getElementById('tSem').textContent = state.meta.sem;
+  var n = null;
+  if (state.meta.semStart) {
+    var a = parseKey(state.meta.semStart);
+    var t = new Date();
+    var diff = Math.round((new Date(t.getFullYear(), t.getMonth(), t.getDate()) - a) / 86400000);
+    if (diff >= 0) n = Math.floor(diff / 7) + 1;
+  }
+  document.getElementById('tWeek').textContent = n ? (n + ' (' + (n % 2 == 1 ? '1' : '2') + ' нед.)') : '—';
+}
+
+function renderWeekBar() {
+  var end = addD(state.weekStart, 6);
+  document.getElementById('weekLabel').textContent = fmtKey(state.weekStart) + ' – ' + fmtKey(end);
+}
+
+function renderTabs() {
+  var h = '';
+  for (var i = 0; i < 7; i++) {
+    var d = parseKey(addD(state.weekStart, i));
+    h += '<button class="daytab' + (i == state.selDay ? ' active' : '') + '" data-act="tab" data-day="' + i + '">' + DN[i] + ' ' + pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '</button>';
+  }
+  document.getElementById('dayTabs').innerHTML = h;
+}
+
+function renderSchedule() {
+  var h = '';
+  for (var i = state.selDay; i < 7; i++) {
+    var key = addD(state.weekStart, i);
+    var d = parseKey(key);
+    h += '<div class="dayhead"><span>' + DNAMES[i] + '</span><span>' + fmt(d) + '</span></div>';
+    var day = state.lessons.filter(function (l) { return l.date === key; });
+    day.sort(function (a, b) { return a.start < b.start ? -1 : (a.start > b.start ? 1 : 0); });
+    if (day.length === 0) h += '<div class="empty">Занятий нет</div>';
+    for (var j = 0; j < day.length; j++) {
+      var l = day[j];
+      var cls = TYPECLS[l.type] || 't-lec';
+      var ab = TYPEAB[l.type] || 'лек';
+      h += '<div class="card" data-act="hw" data-id="' + l.id + '">'
+        + '<div class="tblock ' + cls + '"><span>' + esc(l.start) + '</span><i></i><span>' + esc(l.end) + '</span></div>'
+        + '<div class="cbody">'
+        + '<div class="cname"><span class="tlabel">' + ab + '</span>' + esc(l.subj) + '</div>'
+        + (l.teacher ? '<div class="cmeta">' + esc(l.teacher) + '</div>' : '')
+        + (l.aud ? '<div class="cmeta">Аудитория: ' + esc(l.aud) + '</div>' : '');
+      var arr = state.hw[l.id] || [];
+      for (var k = 0; k < arr.length; k++) {
+        h += '<span class="chip' + (arr[k].done ? ' done' : '') + '" data-act="chip" data-id="' + l.id + '">📓 ' + esc(arr[k].text) + '</span>';
+      }
+      h += '</div>'
+        + '<button class="edit" data-act="edit" data-id="' + l.id + '" title="Изменить занятие">✎</button>'
+        + '</div>';
+    }
+    h += '<button class="addbtn" data-act="add" data-date="' + key + '">+ Добавить занятие на этот день</button>';
+  }
+  document.getElementById('schedule').innerHTML = h;
+}
+
+function renderCalendar() {
+  document.getElementById('calTitle').textContent = MNS[state.calM] + ' ' + state.calY;
+  var first = new Date(state.calY, state.calM, 1);
+  var off = (first.getDay() + 6) % 7;
+  var h = '';
+  var wd = ['пн','вт','ср','чт','пт','сб','вс'];
+  for (var i = 0; i < 7; i++) h += '<div class="calwd">' + wd[i] + '</div>';
+  for (var b = 0; b < off; b++) h += '<div></div>';
+  var dim = new Date(state.calY, state.calM + 1, 0).getDate();
+  var lessonsByDate = {};
+  var hwByDate = {};
+  for (var j = 0; j < state.lessons.length; j++) {
+    var l = state.lessons[j];
+    if (!lessonsByDate[l.date]) lessonsByDate[l.date] = [];
+    lessonsByDate[l.date].push(l.type);
+    var arr = state.hw[l.id] || [];
+    for (var k = 0; k < arr.length; k++) {
+      if (!arr[k].done) hwByDate[l.date] = true;
+    }
+  }
+  var todayK = dkey(new Date());
+  for (var n = 1; n <= dim; n++) {
+    var key = state.calY + '-' + pad(state.calM + 1) + '-' + pad(n);
+    var dots = '';
+    var list = lessonsByDate[key] || [];
+    var lim = list.length > 3 ? 3 : list.length;
+    for (var k2 = 0; k2 < lim; k2++) dots += '<span class="dot ' + TYPECLS[list[k2]] + '"></span>';
+    if (hwByDate[key]) dots += '<span class="dot hw"></span>';
+    h += '<div class="calcell' + (key === todayK ? ' today' : '') + '" data-act="calday" data-key="' + key + '">' + n + '<div class="dots">' + dots + '</div></div>';
+  }
+  document.getElementById('calGrid').innerHTML = h;
+}
+
+function renderAll() {
+  renderTop();
+  renderWeekBar();
+  renderTabs();
+  renderSchedule();
+  renderCalendar();
+}
+
+function openModal(html) {
+  document.getElementById('modal').innerHTML = '<div class="overlay"><div class="modal">' + html + '</div></div>';
+}
+function closeModal() { document.getElementById('modal').innerHTML = ''; }
+function pickType(t) {
+  state.newType = t;
+  var btns = document.querySelectorAll('.tbtn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.remove('sel');
+    if (btns[i].getAttribute('data-t') == t) btns[i].classList.add('sel');
+  }
+}
+
+function lessonFormHtml(l, isNew) {
+  var h = '<h3>' + (isNew ? 'Новое занятие' : 'Изменить занятие') + '</h3>';
+  h += '<div class="hwmeta">' + DNAMES[(parseKey(state.editDate).getDay() + 6) % 7] + ', ' + fmtKey(state.editDate) + '</div>';
+  h += '<div class="typebtns">';
+  var keys = ['lec', 'pr', 'lab'];
+  for (var i = 0; i < 3; i++) {
+    h += '<button type="button" class="tbtn ' + TYPECLS[keys[i]] + (state.newType == keys[i] ? ' sel' : '') + '" data-act="type" data-t="' + keys[i] + '">' + TYPENAME[keys[i]] + '</button>';
+  }
+  h += '</div>';
+  h += '<div class="frow"><label>Предмет</label><input id="fSubj" value="' + esc(l ? l.subj : '') + '" placeholder="Например: Дискретная математика" autocomplete="off" oninput="subjInput()"><div id="sugg"></div></div>';
+  h += '<div class="frow2">'
+    + '<div class="frow"><label>Начало</label><input id="fStart" type="time" value="' + (l ? esc(l.start) : '') + '"></div>'
+    + '<div class="frow"><label>Конец</label><input id="fEnd" type="time" value="' + (l ? esc(l.end) : '') + '"></div>'
+    + '</div>';
+  h += '<div class="frow"><label>Преподаватель (необязательно)</label><input id="fTeacher" value="' + esc(l ? l.teacher : '') + '"></div>';
+  h += '<div class="frow"><label>Аудитория (необязательно)</label><input id="fAud" value="' + esc(l ? l.aud : '') + '"></div>';
+  h += '<div class="mrow"><button type="button" class="btn primary" onclick="saveLesson(' + (isNew ? 1 : 0) + ')">Сохранить</button><button type="button" class="btn ghost" data-act="close">Отмена</button></div>';
+  if (!isNew) h += '<div class="mrow"><button type="button" class="btn danger" onclick="delLesson()">Удалить занятие</button></div>';
+  return h;
+}
+
+function subjInput() {
+  var box = document.getElementById('sugg');
+  if (!box) return;
+  var v = document.getElementById('fSubj').value.trim().toLowerCase();
+  if (!v) { box.innerHTML = ''; return; }
+  var h = '';
+  var c = 0;
+  for (var i = 0; i < state.subjects.length && c < 5; i++) {
+    var s = state.subjects[i];
+    if (s.toLowerCase().indexOf(v) === 0) {
+      h += '<button type="button" class="sbtn" data-act="subj" data-s="' + esc(s) + '">' + esc(s) + '</button>';
+      c++;
+    }
+  }
+  box.innerHTML = h;
+}
+
+function openAdd(dateKey) {
+  state.editId = null;
+  state.editDate = dateKey;
+  state.newType = 'lec';
+  openModal(lessonFormHtml(null, true));
+}
+function openEdit(id) {
+  var l = findLesson(id);
+  if (!l) return;
+  state.editId = id;
+  state.editDate = l.date;
+  state.newType = l.type;
+  openModal(lessonFormHtml(l, false));
+}
+function saveLesson(isNew) {
+  var subj = document.getElementById('fSubj').value.trim();
+  var st = document.getElementById('fStart').value;
+  var en = document.getElementById('fEnd').value;
+  var tc = document.getElementById('fTeacher').value.trim();
+  var au = document.getElementById('fAud').value.trim();
+  if (!subj) { alert('Напишите название предмета'); return; }
+  if (!st || !en || en <= st) { alert('Укажите время начала и конца (конец должен быть позже начала)'); return; }
+  if (isNew) {
+    state.lessons.push({ id: Date.now(), date: state.editDate, type: state.newType, subj: subj, teacher: tc, aud: au, start: st, end: en });
+  } else {
+    var l = findLesson(state.editId);
+    if (l) { l.type = state.newType; l.subj = subj; l.teacher = tc; l.aud = au; l.start = st; l.end = en; }
+  }
+  if (state.subjects.indexOf(subj) < 0) state.subjects.push(subj);
+  save();
+  closeModal();
+  renderAll();
+}
+function delLesson() {
+  if (!confirm('Удалить это занятие вместе с его домашкой?')) return;
+  var keep = [];
+  for (var i = 0; i < state.lessons.length; i++) {
+    if (state.lessons[i].id != state.editId) keep.push(state.lessons[i]);
+  }
+  state.lessons = keep;
+  delete state.hw[state.editId];
+  save();
+  closeModal();
+  renderAll();
+}
+
+function openHw(id) {
+  var l = findLesson(id);
+  if (!l) return;
+  state.editId = id;
+  var ab = TYPEAB[l.type] || 'лек';
+  var h = '<h3>Домашнее задание</h3>';
+  h += '<div class="hwmeta"><span class="tlabel">' + ab + '</span>' + esc(l.subj) + ' · ' + esc(l.start) + '–' + esc(l.end) + ' · ' + fmtKey(l.date) + '</div>';
+  var arr = state.hw[id] || [];
+  h += '<div id="hwList">';
+  if (arr.length === 0) h += '<div class="empty">Пока ничего не задано</div>';
+  for (var k = 0; k < arr.length; k++) {
+    h += '<div class="hwrow"><input type="checkbox" ' + (arr[k].done ? 'checked ' : '') + 'onchange="toggleHw(' + id + ',' + k + ')">'
+      + '<span class="hwtext' + (arr[k].done ? ' done' : '') + '">' + esc(arr[k].text) + '</span>'
+      + '<button type="button" class="hwdel" onclick="delHw(' + id + ',' + k + ')">&times;</button></div>';
+  }
+  h += '</div>';
+  h += '<div class="frow"><textarea id="hwText" rows="3" placeholder="Что задали на этот раз..."></textarea></div>';
+  h += '<div class="mrow"><button type="button" class="btn primary" onclick="addHw()">Добавить</button><button type="button" class="btn ghost" onclick="openEdit(state.editId)">Изменить пару</button><button type="button" class="btn ghost" data-act="close">Закрыть</button></div>';
+  openModal(h);
+}
+function addHw() {
+  var box = document.getElementById('hwText');
+  if (!box) return;
+  var v = box.value.trim();
+  if (!v) return;
+  var id = state.editId;
+  if (!state.hw[id]) state.hw[id] = [];
+  state.hw[id].push({ text: v, done: false });
+  save();
+  renderAll();
+  openHw(id);
+}
+function toggleHw(id, idx) {
+  var arr = state.hw[id] || [];
+  if (arr[idx]) {
+    arr[idx].done = !arr[idx].done;
+    save();
+    renderAll();
+    openHw(id);
+  }
+}
+function delHw(id, idx) {
+  var arr = state.hw[id] || [];
+  arr.splice(idx, 1);
+  if (arr.length === 0) delete state.hw[id];
+  save();
+  renderAll();
+  openHw(id);
+}
+
+function wire() {
+  document.getElementById('dayTabs').addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act]');
+    if (!el) return;
+    if (el.getAttribute('data-act') == 'tab') {
+      state.selDay = +el.getAttribute('data-day');
+      renderAll();
+    }
+  });
+  document.getElementById('schedule').addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act]');
+    if (!el) return;
+    var a = el.getAttribute('data-act');
+    if (a == 'add') openAdd(el.getAttribute('data-date'));
+    else if (a == 'hw' || a == 'chip') openHw(+el.getAttribute('data-id'));
+    else if (a == 'edit') openEdit(+el.getAttribute('data-id'));
+  });
+  document.getElementById('calGrid').addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act]');
+    if (!el) return;
+    if (el.getAttribute('data-act') == 'calday') {
+      var key = el.getAttribute('data-key');
+      var d = parseKey(key);
+      state.weekStart = dkey(mondayOf(d));
+      state.selDay = (d.getDay() + 6) % 7;
+      var w = parseKey(state.weekStart);
+      state.calY = w.getFullYear();
+      state.calM = w.getMonth();
+      renderAll();
+    }
+  });
+  document.getElementById('tiles').addEventListener('click', function (e) {
+    var el = e.target.closest('[data-edit]');
+    if (!el) return;
+    var k = el.getAttribute('data-edit');
+    if (k == 'week') {
+      var v = prompt('Дата начала семестра (ГГГГ-ММ-ДД):', state.meta.semStart || '');
+      if (v !== null) { state.meta.semStart = v.trim(); save(); renderAll(); }
+    } else {
+      var titles = { group: 'Группа', year: 'Учебный год', sem: 'Семестр' };
+      var v2 = prompt(titles[k] + ':', state.meta[k] || '');
+      if (v2 !== null) { state.meta[k] = v2.trim(); save(); renderAll(); }
+    }
+  });
+  document.getElementById('prevW').onclick = function () {
+    state.weekStart = addD(state.weekStart, -7);
+    var w = parseKey(state.weekStart);
+    state.calY = w.getFullYear(); state.calM = w.getMonth();
+    renderAll();
+  };
+  document.getElementById('nextW').onclick = function () {
+    state.weekStart = addD(state.weekStart, 7);
+    var w = parseKey(state.weekStart);
+    state.calY = w.getFullYear(); state.calM = w.getMonth();
+    renderAll();
+  };
+  document.getElementById('calPrev').onclick = function () {
+    state.calM--;
+    if (state.calM < 0) { state.calM = 11; state.calY--; }
+    renderAll();
+  };
+  document.getElementById('calNext').onclick = function () {
+    state.calM++;
+    if (state.calM > 11) { state.calM = 0; state.calY++; }
+    renderAll();
+  };
+  document.getElementById('modal').addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act]');
+    if (el) {
+      var a = el.getAttribute('data-act');
+      if (a == 'close') { closeModal(); return; }
+      if (a == 'type') { pickType(el.getAttribute('data-t')); return; }
+      if (a == 'subj') {
+        document.getElementById('fSubj').value = el.getAttribute('data-s');
+        document.getElementById('sugg').innerHTML = '';
+        return;
+      }
+    }
+    if (e.target.classList.contains('overlay')) closeModal();
+  });
+}
+
+function init() {
+  load();
+  var t = new Date();
+  var m = mondayOf(t);
+  state.weekStart = dkey(m);
+  state.selDay = (t.getDay() + 6) % 7;
+  state.calY = m.getFullYear();
+  state.calM = m.getMonth();
+  document.getElementById('upd').textContent = 'Обновлено: ' + fmt(t);
+  wire();
+  renderAll();
+}
+init();
+</script>
+</body>
+</html>
