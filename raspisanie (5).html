@@ -1,0 +1,255 @@
+<!DOCTYPE html><html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Моё расписание</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:#F2EAE3;padding-bottom:60px}
+#err{display:none;background:#B3261E;color:#fff;padding:8px 12px;font-size:13px;white-space:pre-wrap}
+header{background:linear-gradient(180deg,#7A1220,#4A0C12);color:#fff;padding:14px 16px 12px;position:sticky;top:0;z-index:5}
+.hrow{display:flex;align-items:center;gap:8px}
+.hrow h1{font-size:22px;flex:1}
+.hbtn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:12px;padding:10px 13px;font-size:18px;cursor:pointer}
+.toolbar{display:flex;gap:10px;margin-top:10px}
+.chip{flex:1;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:12px;padding:10px 8px;font-size:15px;font-weight:600;text-align:center;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+main{max-width:720px;margin:0 auto;padding:6px 12px 30px}
+.dayhead{display:flex;justify-content:space-between;align-items:center;background:#5C1A1A;color:#fff;border-radius:10px;padding:12px 14px;font-weight:700;font-size:18px;margin-top:14px}
+.dayhead .dname{flex:1}
+.dayhead .ddate{font-weight:600;font-size:16px;opacity:.95}
+.lesson{display:flex;background:#fff;border-radius:12px;margin:8px 8px 0;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer}
+.timebadge{width:84px;flex:none;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;padding:10px 4px;border-radius:10px;margin:6px;font-size:15px}
+.lcontent{padding:10px 12px 10px 2px;flex:1;min-width:0}
+.lname{font-weight:700;font-size:16px}
+.lmeta{color:#555;font-size:14px;margin-top:2px}
+.lbadge{float:right;background:#eee;border-radius:8px;padding:2px 8px;font-size:12px;color:#444;margin-left:6px}
+.nop{text-align:center;color:#999;padding:8px;font-size:14px}
+.addbtn{display:block;width:calc(100% - 16px);margin:10px 8px 0;background:#5C1A1A;color:#fff;border:none;border-radius:12px;padding:12px;font-size:16px;font-weight:600;cursor:pointer}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.overlay.show{display:flex}
+.sheet{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:560px;padding:16px 16px 24px;max-height:88vh;overflow:auto}
+@media(min-width:700px){.overlay{align-items:center}.sheet{border-radius:16px}}
+.sheet h2{font-size:18px;margin-bottom:6px}
+label{display:block;font-weight:600;margin:10px 0 4px;color:#333;font-size:14px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:10px;font-size:16px;background:#fff;font-family:inherit}
+.row2{display:flex;gap:10px}.row2>div{flex:1}
+.btn{width:100%;padding:12px;border:none;border-radius:12px;font-size:17px;font-weight:700;margin-top:12px;cursor:pointer}
+.btn.main{background:#8E1B22;color:#fff}
+.btn.gray{background:#eee;color:#333}
+.btn.red{background:#B3261E;color:#fff}
+.note{font-size:13px;color:#666;margin-top:6px;line-height:1.4}
+.pairrow{display:flex;gap:8px;align-items:center;margin:8px 0}
+.pairrow .pnum{width:90px;font-weight:700;flex:none}
+.pairrow input{padding:8px}
+.pdel{background:#f3d3d3;color:#B3261E;border:none;border-radius:10px;padding:9px 12px;font-size:15px;cursor:pointer}
+#impPrev{background:#f7f2ec;border-radius:10px;padding:10px;max-height:220px;overflow:auto;margin-top:10px;font-size:14px;display:none}
+.acwrap{position:relative}
+.aclist{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ccc;border-radius:10px;z-index:20;max-height:180px;overflow:auto;display:none;box-shadow:0 4px 10px rgba(0,0,0,.15)}
+.aclist div{padding:9px 12px;cursor:pointer;border-bottom:1px solid #eee}
+.aclist div:hover{background:#f6e9e9}
+</style></head><body>
+<div id="err"></div>
+<header>
+  <div class="hrow">
+    <span style="font-size:26px">📕</span><h1>Моё расписание</h1>
+    <button class="hbtn" onclick="shiftWeek(-1)">&lsaquo;</button>
+    <button class="hbtn" onclick="goNow()" style="font-size:15px;padding:10px 14px">Сейчас</button>
+    <button class="hbtn" onclick="shiftWeek(1)">&rsaquo;</button>
+  </div>
+  <div class="toolbar">
+    <button class="chip" onclick="openPairs()">⏱ Время пар</button>
+    <button class="chip" onclick="openImport()">📥 Импорт с сайта</button>
+  </div>
+</header>
+<main id="days"></main>
+
+<div class="overlay" id="ovLesson"><div class="sheet">
+  <h2 id="lmTitle">Занятие</h2>
+  <label>Предмет</label>
+  <div class="acwrap"><input id="fName" list="subjList" autocomplete="off" oninput="autoFill()"><datalist id="subjList"></datalist></div>
+  <div class="row2"><div><label>Тип</label><select id="fType"><option value="лек">лек</option><option value="лаб">лаб</option><option value="пр">пр</option><option value="практ">практ</option></select></div>
+  <div><label>Пара</label><select id="fPair" onchange="pairPick()"><option value="">— без пары —</option></select></div></div>
+  <div class="row2"><div><label>Начало</label><input type="time" id="fStart"></div><div><label>Конец</label><input type="time" id="fEnd"></div></div>
+  <label>Преподаватель (необязательно)</label><input id="fTeacher">
+  <label>Аудитория (необязательно)</label><input id="fRoom">
+  <label>📓 Домашнее задание (необязательно)</label><textarea id="fHomework" rows="2"></textarea>
+  <button class="btn main" onclick="saveLesson()">Сохранить</button>
+  <button class="btn gray" onclick="closeAll()">Отмена</button>
+  <button class="btn red" id="btnDel" style="display:none" onclick="deleteLesson()">Удалить занятие</button>
+</div></div>
+
+<div class="overlay" id="ovPairs"><div class="sheet">
+  <h2>⏱ Время пар</h2>
+  <div id="pairsList"></div>
+  <button class="btn gray" onclick="addPair()">+ Добавить пару</button>
+  <button class="btn main" onclick="savePairs()">Сохранить</button>
+  <button class="btn gray" onclick="closeAll()">Отмена</button>
+  <p class="note">Укажи начало и конец каждой пары — при добавлении занятия можно будет просто выбрать номер пары, и время подставится само.</p>
+</div></div>
+
+<div class="overlay" id="ovImport"><div class="sheet">
+  <h2>📥 Импорт с сайта</h2>
+  <p class="note">Открой страницу расписания группы на сайте вуза, выдели весь текст недели (Ctrl+A / «выделить всё»), скопируй и вставь сюда. Затем нажми «Распознать».</p>
+  <textarea id="impText" rows="8" placeholder="Вставь сюда текст расписания..."></textarea>
+  <button class="btn main" onclick="doParse()">Распознать</button>
+  <div id="impPrev"></div>
+  <button class="btn main" id="btnImpSave" style="display:none" onclick="saveImport()">Сохранить в расписание</button>
+  <button class="btn gray" onclick="closeAll()">Отмена</button>
+</div></div>
+
+<script>
+window.onerror=function(m){var e=document.getElementById('err');e.style.display='block';e.textContent='Ошибка: '+m;return false;};
+var NAMES=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+var PALETTE=['#7B1FA2','#E8720C','#1E8E3E'];
+var DEF_PAIRS=[['08:00','09:30'],['09:40','11:10'],['11:20','12:50'],['13:30','15:00'],['15:40','17:10'],['17:20','18:50']];
+function ls(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function ss(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+var lessons=ls('rasp_lessons_v1',{});
+var pairs=ls('rasp_pairs_v1',null)||DEF_PAIRS.slice();
+var subjects=ls('rasp_subjects_v1',{});
+function pad(n){return (n<10?'0':'')+n;}
+function iso(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function fmt(d){return pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear();}
+function monday(d){var x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
+var curMon=monday(new Date());
+function shiftWeek(n){curMon.setDate(curMon.getDate()+7*n);render();}
+function goNow(){curMon=monday(new Date());render();}
+function colorFor(n){var h=0;for(var i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))%997;return PALETTE[h%3];}
+function pairNo(t){for(var i=0;i<pairs.length;i++)if(pairs[i][0]===t)return i+1;return 0;}
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function render(){
+  var m=document.getElementById('days');var out='';
+  for(var i=0;i<7;i++){
+    var d=new Date(curMon);d.setDate(curMon.getDate()+i);var k=iso(d);
+    var arr=(lessons[k]||[]).map(function(l,i){return {l:l,i:i};});
+    arr.sort(function(a,b){return (a.l.start||'99:99')<(b.l.start||'99:99')?-1:1;});
+    var dts=fmt(d);var today=fmt(new Date())===dts?' ⟡':'';
+    out+='<div class="dayhead"><span class="dname">'+NAMES[i]+today+'</span><span class="ddate">'+dts+'</span></div>';
+    if(!arr.length){out+='<p class="nop">Занятий нет</p>';}
+    else{
+      for(var j=0;j<arr.length;j++){
+        var l=arr[j].l;var col=colorFor(l.name);
+        var bn=pairNo(l.start);var badge=bn?'<span class="lbadge">'+bn+'-е занятие</span>':'';
+        var sub=l.sub?' п/г '+l.sub:'';var tm=l.start?(l.end?l.start+'|'+l.end:l.start):'—';
+        var hw=l.hw?'<div class="lmeta">📓 '+esc(l.hw)+'</div>':'';
+        out+='<div class="lesson" onclick="editLesson(\''+k+'\','+arr[j].i+')"><div class="timebadge" style="background:'+col+'">'+
+        (l.start?esc(l.start):'')+(l.end?'<span style="opacity:.7;font-weight:400">— '+esc(l.end)+'</span>':'')+'</div>'+
+        '<div class="lcontent">'+badge+'<div class="lname">'+esc(l.type)+' '+esc(l.name)+sub+'</div>'+
+        (l.teacher?'<div class="lmeta">'+esc(l.teacher)+'</div>':'')+
+        (l.room?'<div class="lmeta">Аудитория: '+esc(l.room)+'</div>':'')+hw+'</div></div>';
+      }
+    }
+    out+='<button class="addbtn" onclick="openLesson(\''+k+'\')">+ Добавить занятие на этот день</button>';
+  }
+  m.innerHTML=out;
+}
+var editDate=null,editIdx=null;
+function openLesson(k){editDate=k;editIdx=null;document.getElementById('lmTitle').textContent='Новое занятие';
+  ['fName','fTeacher','fRoom','fHomework'].forEach(function(i){document.getElementById(i).value='';});
+  document.getElementById('fType').value='пр';document.getElementById('fStart').value='';document.getElementById('fEnd').value='';
+  document.getElementById('btnDel').style.display='none';fillPairSelect();refreshSubjList();show('ovLesson');}
+function editLesson(k,j){var l=(lessons[k]||[])[j];if(!l)return;editDate=k;editIdx=j;
+  document.getElementById('lmTitle').textContent='Занятие';
+  document.getElementById('fName').value=l.name;document.getElementById('fType').value=l.type||'пр';
+  document.getElementById('fStart').value=l.start||'';document.getElementById('fEnd').value=l.end||'';
+  document.getElementById('fTeacher').value=l.teacher||'';document.getElementById('fRoom').value=l.room||'';
+  document.getElementById('fHomework').value=l.hw||'';
+  document.getElementById('btnDel').style.display='block';fillPairSelect();refreshSubjList();show('ovLesson');}
+function fillPairSelect(){var s=document.getElementById('fPair');s.innerHTML='<option value="">— без пары —</option>';
+  for(var i=0;i<pairs.length;i++){var o=document.createElement('option');o.value=i;o.textContent=(i+1)+'-я пара: '+pairs[i][0]+'–'+pairs[i][1];s.appendChild(o);}}
+function pairPick(){var v=document.getElementById('fPair').value;if(v==='')return;var p=pairs[+v];
+  document.getElementById('fStart').value=p[0];document.getElementById('fEnd').value=p[1];}
+function refreshSubjList(){var dl=document.getElementById('subjList');dl.innerHTML='';
+  for(var k in subjects){var o=document.createElement('option');o.value=subjects[k].name||k;dl.appendChild(o);}}
+function autoFill(){var v=document.getElementById('fName').value.trim().toLowerCase();
+  if(!v)return;if(subjects[v]){
+    var s=subjects[v];
+    if(!document.getElementById('fTeacher').value)document.getElementById('fTeacher').value=s.teacher||'';
+    if(!document.getElementById('fRoom').value)document.getElementById('fRoom').value=s.room||'';
+    if(s.type)document.getElementById('fType').value=s.type;
+    if(s.start&&!document.getElementById('fStart').value){document.getElementById('fStart').value=s.start;document.getElementById('fEnd').value=s.end||'';}
+  }}
+function saveLesson(){var name=document.getElementById('fName').value.trim();if(!name){alert('Напиши название предмета');return;}
+  var l={type:document.getElementById('fType').value,name:name,sub:'',
+    start:document.getElementById('fStart').value,end:document.getElementById('fEnd').value,
+    teacher:document.getElementById('fTeacher').value.trim(),room:document.getElementById('fRoom').value.trim(),
+    hw:document.getElementById('fHomework').value.trim(),src:'manual'};
+  lessons[editDate]=lessons[editDate]||[];
+  if(editIdx===null)lessons[editDate].push(l);else lessons[editDate][editIdx]=l;
+  var key=name.toLowerCase();subjects[key]={name:name,teacher:l.teacher,room:l.room,type:l.type,start:l.start,end:l.end};ss('rasp_subjects_v1',subjects);
+  ss('rasp_lessons_v1',lessons);closeAll();render();}
+function deleteLesson(){if(editIdx===null)return;lessons[editDate].splice(editIdx,1);ss('rasp_lessons_v1',lessons);closeAll();render();}
+function openPairs(){renderPairs();show('ovPairs');}
+function renderPairs(){var el=document.getElementById('pairsList');var h='';
+  for(var i=0;i<pairs.length;i++){h+='<div class="pairrow"><span class="pnum">'+(i+1)+'-я пара</span>'+
+    '<input type="time" value="'+pairs[i][0]+'" onchange="pairs['+i+'][0]=this.value">'+
+    '<input type="time" value="'+pairs[i][1]+'" onchange="pairs['+i+'][1]=this.value">'+
+    '<button class="pdel" onclick="pairs.splice('+i+',1);renderPairs()">✕</button></div>';}
+  el.innerHTML=h;}
+function addPair(){pairs.push(['','']);renderPairs();}
+function savePairs(){ss('rasp_pairs_v1',pairs);closeAll();render();}
+var impData=null;
+function openImport(){document.getElementById('impText').value='';document.getElementById('impPrev').style.display='none';
+  document.getElementById('btnImpSave').style.display='none';impData=null;show('ovImport');}
+var DAY_RE=/^(Понедельник|Вторник|Среда|Четверг|Пятница|Суббота|Воскресенье)\b/i;
+var DATE_RE=/(\d{1,2})\.(\d{1,2})\.(\d{4})/;
+var TIME_RE=/^(\d{1,2}):(\d{2})$/;
+var RANGE_RE=/^(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})$/;
+var TYPE_RE=/^(лек|лаб|пр|практ|кр|конс)\s+(.+)$/i;
+var ROOM_RE=/^Аудитория:\s*(.+)$/i;
+var TEACH_RE=/^(?:прСПО|асс\.|проф\.|доц\.|ст\.\s?преп\.|преп\.|ассистент|доцент|профессор|старший преподаватель)\s*(.+)$/i;
+var FIO_RE=/^[А-ЯЁ][а-яё]+\s+[А-ЯЁ][а-яё]+(?:\s+[А-ЯЁ][а-яё]+)?$/;
+var JUNK=/^(\d+-е занятие|\d+\s*е занятие|↑|↓|Печать|ПЕЧАТЬ|Экспорт|ЭКСПОРТ|Календарь|КАЛЕНДАРЬ|Поиск|Занятий нет)$/i;
+function normTime(s){return s.length===4?'0'+s:s;}
+function parseImport(text){
+  var days={};var cur=null;var pend=[];var exp=null;var L=null;var lastS='',lastE='';
+  var idx={'понедельник':0,'вторник':1,'среда':2,'четверг':3,'пятница':4,'суббота':5,'воскресенье':6};
+  var lines=text.split(/\r?\n/);
+  for(var li=0;li<lines.length;li++){
+    var s=lines[li].trim();if(!s||JUNK.test(s))continue;
+    if(s.indexOf('КИТо-210')===0)continue;
+    var dm=DATE_RE.exec(s);
+    if(DAY_RE.test(s)){
+      var nm=s.match(DAY_RE)[1].toLowerCase();var d=null;
+      if(dm)d=pad(+dm[1])+'.'+pad(+dm[2])+'.'+dm[3];
+      else if(curMon){var wd=new Date(curMon);wd.setDate(curMon.getDate()+idx[nm]);d=fmt(wd);}
+      cur=d;days[cur]=days[cur]||[];pend=[];exp=null;L=null;lastS='';lastE='';continue;}
+    if(dm&&cur&&s===dm[0])continue;
+    if(TIME_RE.test(s)||RANGE_RE.test(s)){
+      if(RANGE_RE.test(s)){var rm=RANGE_RE.exec(s);pend=[normTime(rm[1]),normTime(rm[2])];}
+      else pend.push(normTime(s));
+      exp=null;continue;}
+    if(exp==='room'&&ROOM_RE.test(s)){if(L)L.room=ROOM_RE.exec(s)[1].trim();exp=null;continue;}
+    if(exp==='teacher'){
+      var tm2=TEACH_RE.exec(s);
+      if(tm2){if(L)L.teacher=tm2[1].trim();exp='room';continue;}
+      if(FIO_RE.test(s)){if(L)L.teacher=s;exp='room';continue;}}
+    if(cur===null)continue;
+    var tS,tE;
+    if(pend.length){tS=pend[0];tE=pend.length>=2?pend[1]:'';pend=[];lastS=tS;lastE=tE||lastE;}
+    else{tS=lastS;tE=lastE;}
+    var m=TYPE_RE.exec(s);var typ=m?m[1].toLowerCase():'пр';var nm2=m?m[2]:s;var sub='';
+    var pg=nm2.match(/п\/г\s*(\d+)/i);if(pg)sub=pg[1];
+    nm2=nm2.replace(/,?\s*п\/г\s*\d+\s*$/i,'').trim();
+    L={type:typ,name:nm2,sub:sub,start:tS,end:tE,teacher:'',room:'',hw:'',src:'import'};
+    days[cur].push(L);exp='teacher';}
+  return days;}
+function doParse(){
+  var txt=document.getElementById('impText').value;
+  if(!txt.trim()){alert('Вставь текст расписания');return;}
+  impData=parseImport(txt);var n=0,ds=0;var pv='';
+  for(var d in impData){var a=impData[d];if(!a.length)continue;ds++;n+=a.length;
+    pv+='<b>'+d+'</b><br>';for(var i=0;i<a.length;i++){var l=a[i];
+      pv+='&nbsp;&nbsp;'+esc(l.start||'—')+(l.end?'–'+esc(l.end):'')+' '+esc(l.type)+' '+esc(l.name)+(l.sub?' п/г'+l.sub:'')+(l.teacher?', '+esc(l.teacher):'')+(l.room?', ауд. '+esc(l.room):'')+'<br>';}}
+  var p=document.getElementById('impPrev');p.innerHTML=(n?('Распознано занятий: '+n+' на '+ds+' дн.'+(n?'<br>':'')+pv):'Не нашла ни одного занятия. Проверь, что скопирован текст всей недели.');
+  p.style.display='block';document.getElementById('btnImpSave').style.display=n?'block':'none';}
+function saveImport(){if(!impData)return;
+  for(var d in impData){var a=impData[d];if(!a.length)continue;
+    lessons[d]=(lessons[d]||[]).filter(function(x){return x.src!=='import';});
+    for(var i=0;i<a.length;i++)lessons[d].push(a[i]);
+    lessons[d].sort(function(x,y){return (x.start||'99:99')<(y.start||'99:99')?-1:1;});}
+  ss('rasp_lessons_v1',lessons);impData=null;closeAll();render();}
+function show(id){document.getElementById(id).classList.add('show');}
+function closeAll(){var a=document.querySelectorAll('.overlay');for(var i=0;i<a.length;i++)a[i].classList.remove('show');}
+document.querySelectorAll('.overlay').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)closeAll();});});
+render();
+</script></body></html>
