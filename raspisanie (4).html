@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Моё расписание</title>
+<meta name="theme-color" content="#6d1a2d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{--b:#6d1a2d;--b2:#8e2338;--bg:#f4f0ee;--card:#fff;--ink:#2a2126;--mut:#8a7c80;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:16px}
+header{background:linear-gradient(135deg,#4a101c,#6d1a2d 60%,#8e2338);color:#fff;padding:14px 12px 12px;position:sticky;top:0;z-index:5;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+h1{font-size:20px;margin:0 0 8px;font-weight:700}
+button{font:inherit;border:none;border-radius:10px;padding:9px 12px;cursor:pointer;background:#eee;color:var(--ink)}
+.btn{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:10px}
+.btn:active{background:rgba(255,255,255,.3)}
+.mainbtns{display:flex;gap:8px;flex-wrap:wrap}
+.mainbtns .btn{flex:1;text-align:center;white-space:nowrap;padding:10px 6px}
+.wk{display:flex;align-items:center;gap:6px;justify-content:center;margin-bottom:10px}
+.wk .lbl{flex:1;text-align:center;font-weight:700;font-size:15px}
+main{padding:10px 10px 40px}
+.day{margin:0 0 14px;border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.10)}
+.dhead{display:flex;justify-content:space-between;align-items:center;background:var(--b);color:#fff;padding:10px 12px;font-weight:700}
+.dhead .dt{font-weight:700;letter-spacing:.3px;opacity:.95}
+.dbody{background:var(--card);padding:8px}
+.lesson{border-radius:10px;padding:9px 10px;margin:6px 0;border-left:5px solid #999;background:#faf8f7;position:relative}
+.lesson .tt{font-weight:700;font-size:15.5px}
+.lesson .meta{color:#5c5256;font-size:13.5px;margin-top:2px}
+.lesson .chip{display:inline-block;font-size:12px;padding:2px 8px;border-radius:20px;background:rgba(0,0,0,.08);margin-right:6px;font-weight:700;color:#fff}
+.hw{color:#c0392b;font-size:13px;margin-top:4px;font-weight:600}
+.nodot{color:#fff;position:absolute;right:10px;top:8px;font-size:13px}
+.empty{color:var(--mut);text-align:center;padding:14px;font-size:14px}
+.addb{display:block;width:100%;margin-top:8px;background:#f3e3e6;color:var(--b);font-weight:700;border-radius:10px;padding:10px}
+.overlay{position:fixed;inset:0;background:rgba(30,10,15,.5);display:none;z-index:10}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,94vw);max-height:92vh;overflow:auto;background:#fff;border-radius:16px;padding:16px;display:none;z-index:11;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.modal h2{margin:0 0 12px;font-size:18px;color:var(--b)}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:13px;color:#6b5f64;margin-bottom:3px;font-weight:600}
+input,select,textarea{width:100%;padding:11px;border:1px solid #d8cdd1;border-radius:10px;font:inherit;background:#fbf9f8}
+input,select{font-size:16px}
+textarea{min-height:64px;resize:vertical}
+.row2{display:flex;gap:8px}
+.row2 .field{flex:1}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 2px}
+.chip2{background:#f3e3e6;color:var(--b);border-radius:20px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer}
+.actions{display:flex;gap:8px;margin-top:14px}
+.actions .save{flex:1;background:var(--b);color:#fff;font-weight:700;padding:12px}
+.actions .ghost{flex:1;background:#eee}
+.actions .del{background:#fff;color:#c0392b;border:1px solid #e6b0b0}
+.pairrow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.pairrow .n{width:52px;font-weight:700;color:var(--b)}
+.pairrow input{flex:1;padding:9px}
+.pairrow .x{background:#f3e3e6;color:#c0392b;font-weight:700;padding:9px 10px}
+.hint{font-size:13px;color:var(--mut);margin:6px 0}
+#impmsg{font-size:14px;font-weight:600;color:#2e7d32;margin-top:8px;display:none}
+.today .dhead{background:linear-gradient(90deg,#4a101c,#a03046)}
+@media (max-width:480px){.mainbtns .btn{font-size:14px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow"><h1>📕 Моё расписание</h1><span id="todaylbl" style="font-size:13px;opacity:.85"></span></div>
+  <div class="wk">
+    <button class="btn" onclick="shift(-1)">‹</button>
+    <div class="lbl" id="weeklabel"></div>
+    <button class="btn" onclick="shift(0)">Сейчас</button>
+    <button class="btn" onclick="shift(1)">›</button>
+  </div>
+  <div class="mainbtns">
+    <button class="btn" onclick="openPairs()">⏱ Время пар</button>
+    <button class="btn" onclick="openImport()">📥 Импорт с сайта</button>
+  </div>
+</header>
+<main id="days"></main>
+
+<div class="overlay" id="ovl" onclick="closeAll()"></div>
+
+<div class="modal" id="mLesson">
+  <h2 id="lmTitle">Занятие</h2>
+  <div class="field"><label>Предмет</label><input id="fSubj" autocomplete="off" placeholder="Начните вводить…"><div class="chips" id="chips"></div></div>
+  <div class="row2">
+    <div class="field"><label>Тип</label><select id="fType"><option value="">—</option><option>лек</option><option>лаб</option><option>пр</option><option>конс</option></select></div>
+    <div class="field"><label>№ пары (подстановка времени)</label><select id="fPair" onchange="pairFill()"><option value="">—</option></select></div>
+  </div>
+  <div class="row2">
+    <div class="field"><label>Начало</label><input id="fStart" type="time"></div>
+    <div class="field"><label>Конец</label><input id="fEnd" type="time"></div>
+  </div>
+  <div class="field"><label>Преподаватель (необязательно)</label><input id="fTeach" autocomplete="off"></div>
+  <div class="field"><label>Аудитория (необязательно)</label><input id="fRoom" autocomplete="off"></div>
+  <div class="field"><label>Домашнее задание 📓</label><textarea id="fNote" placeholder="Что задали…"></textarea></div>
+  <div class="actions">
+    <button class="save" onclick="saveLesson()">Сохранить</button>
+    <button class="ghost" onclick="closeAll()">Отмена</button>
+  </div>
+  <div class="actions"><button class="del" id="btnDel" style="display:none" onclick="delLesson()">🗑 Удалить занятие</button></div>
+</div>
+
+<div class="modal" id="mPairs">
+  <h2>⏱ Время пар</h2>
+  <div class="hint">Укажите расписание звонков — и при добавлении занятия время будет подставляться по номеру пары.</div>
+  <div id="pairList"></div>
+  <button onclick="addPairRow()" style="width:100%;background:#f3e3e6;color:var(--b);font-weight:700;padding:10px;border-radius:10px">+ Добавить пару</button>
+  <div class="actions">
+    <button class="save" onclick="savePairs()">Сохранить</button>
+    <button class="ghost" onclick="closeAll()">Отмена</button>
+  </div>
+</div>
+
+<div class="modal" id="mImp">
+  <h2>📥 Импорт с сайта вуза</h2>
+  <div class="hint">Скопируйте текст недели на сайте расписания и вставьте сюда. Понимается формат: «Понедельник 09.11.2026», время, тип (лаб/лек/пр), предмет, преподаватель, «Аудитория: …», «N-е занятие». Дни без даты попадут на текущую отображаемую неделю. Повторный импорт обновляет занятия, а не дублирует.</div>
+  <textarea id="impText" placeholder="Вставьте текст сюда…"></textarea>
+  <div id="impmsg"></div>
+  <div class="actions">
+    <button class="save" onclick="doImport()">Распознать и добавить</button>
+    <button class="ghost" onclick="closeAll()">Отмена</button>
+  </div>
+</div>
+
+<script>
+const DAYS=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+const TYPE_COLORS={'лек':'#2e7d32','лаб':'#6a1b9a','пр':'#e65100','конс':'#455a64'};
+const DEFPAIRS=[];
+for(let i=1;i<=8;i++){const h=8+Math.floor((i-1)*1.5);DEFPAIRS.push({n:i,start:String(h).padStart(2,'0')+':00',end:((h+1)>=10?'':'0')+(h+1)+':30'});}
+
+function load(k,d){try{const v=JSON.parse(localStorage.getItem('rasp_'+k));return v??d}catch(e){return d}}
+function save(){localStorage.setItem('rasp_events',JSON.stringify(ev));localStorage.setItem('rasp_pairs',JSON.stringify(pairs));}
+let ev=load('events',[]),pairs=load('pairs',DEFPAIRS),off=0,editId=null,editDate='';
+
+function pad(n){return String(n).padStart(2,'0')}
+function fmt(d){return pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear()}
+function iso(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function monday(off){const d=new Date();d.setHours(0,0,0,0);const w=(d.getDay()+6)%7;d.setDate(d.getDate()-w+off*7);return d}
+function shift(n){off=n===0?0:off+n;render()}
+
+function render(){
+  const mon=weekStart(off=off),sun=new Date(mon);sun.setDate(sun.getDate()+6);
+  document.getElementById('weeklabel').textContent=(+off===0?'Эта неделя':'Неделя')+'  '+fmt(mon)+' — '+fmt(sun);
+  document.getElementById('todaylbl').textContent=fmt(new Date());
+  const box=document.getElementById('days');let html='';
+  for(let i=0;i<7;i++){
+    const d=new Date(mon);d.setDate(d.getDate()+i);
+    const list=ev.filter(x=>x.date===iso(d)).sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+    const isT=iso(d)===iso(new Date());
+    html+='<section class="day'+(isT?' today':'')+'"><div class="dhead"><span>'+DAYS[i]+'</span><span class="dt">'+fmt(d)+'</span></div><div class="dbody">';
+    if(!list.length)html+='<div class="empty">Занятий нет</div>';
+    for(const x of list){
+      const c=TYPE_COLORS[x.type]||'#6d1a2d';
+      html+='<div class="lesson" style="border-left-color:'+c+'" onclick="openLesson(\''+x.id+'\')">'
+        +(x.note?'<span class="nodot">📓</span>':'')
+        +'<span class="chip" style="background:'+c+'">'+(x.type?x.type.toUpperCase():'&nbsp;')+'</span>'
+        +'<span class="tt">'+esc(x.subject)+'</span>'
+        +(x.start?'<div class="meta">🕐 '+x.start+(x.end?' — '+x.end:'')+'</div>':'')
+        +(x.teacher?'<div class="meta">👤 '+esc(x.teacher)+'</div>':'')
+        +(x.room?'<div class="meta">🏠 '+esc(x.room)+'</div>':'')
+        +(x.note?'<div class="hw">📓 '+esc(x.note)+'</div>':'')
+        +'</div>';
+    }
+    html+='<button class="addb" onclick="openLesson(null,\''+iso(d)+'\')">+ Добавить занятие на этот день</button></div></section>';
+  }
+  box.innerHTML=html;
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+/* ---------- модалка занятия ---------- */
+function show(id){document.getElementById('ovl').style.display='block';document.getElementById(id).style.display='block'}
+function closeAll(){document.getElementById('ovl').style.display='none';for(const m of['mLesson','mPairs','mImp'])document.getElementById(m).style.display='none'}
+function pairOpts(){return pairs.map(p=>'<option value="'+p.n+'">'+p.n+'-я пара: '+p.start+'–'+p.end+'</option>').join('')}
+function pairFill(){const n=+document.getElementById('fPair').value;const p=pairs.find(x=>x.n===n);if(p){document.getElementById('fStart').value=p.start;document.getElementById('fEnd').value=p.end}}
+function openLesson(id,date){
+  editId=id;const f={subj:'',type:'',start:'',end:'',teach:'',room:'',note:''};
+  if(id){const x=ev.find(e=>e.id===id);if(!x)return;editDate=x.date;Object.assign(f,{subj:x.subject,type:x.type||'',start:x.start||'',end:x.end||'',teach:x.teacher||'',room:x.room||'',note:x.note||''});
+    document.getElementById('lmTitle').textContent='Занятие · '+fmt(new Date(x.date));document.getElementById('btnDel').style.display='block';}
+  else{editDate=date;document.getElementById('lmTitle').textContent='Новое занятие · '+fmt(new Date(date));document.getElementById('btnDel').style.display='none';}
+  document.getElementById('fSubj').value=f.subj;document.getElementById('fType').value=f.type;
+  document.getElementById('fStart').value=f.start;document.getElementById('fEnd').value=f.end;
+  document.getElementById('fTeach').value=f.teach;document.getElementById('fRoom').value=f.room;document.getElementById('fNote').value=f.note;
+  document.getElementById('fPair').innerHTML='<option value="">—</option>'+pairOpts();
+  renderChips();
+  show('mLesson');
+}
+function memory(){
+  const m={};
+  for(const x of ev){if(!x.subject)continue;const k=x.subject.toLowerCase();m[k]={subject:x.subject,type:x.type||'',teacher:x.teacher||'',room:x.room||''};}
+  return Object.values(m);
+}
+function renderChips(){
+  const q=document.getElementById('fSubj').value.trim().toLowerCase();
+  const list=memory().filter(m=>m.subject.toLowerCase().startsWith(q)).slice(0,6);
+  document.getElementById('chips').innerHTML=list.map(m=>'<span class="chip2" onclick="applyMem(\''+esc(m.subject).replace(/'/g,"\\'")+'\')">'+esc(m.subject)+'</span>').join('');
+}
+function applyMem(subj){
+  const m=memory().find(x=>x.subject===subj);if(!m)return;
+  document.getElementById('fSubj').value=m.subject;
+  if(m.type)document.getElementById('fType').value=m.type;
+  if(m.teacher)document.getElementById('fTeach').value=m.teacher;
+  if(m.room)document.getElementById('fRoom').value=m.room;
+  const s=document.getElementById('fStart'),e=document.getElementById('fEnd');
+  if(!s.value&&m.type&&pairs.length){const p=pairs.find(x=>(x.n===1))||pairs[0];s.value=p.start;e.value=p.end;}
+  document.getElementById('chips').innerHTML='';
+}
+function saveLesson(){
+  const subj=document.getElementById('fSubj').value.trim();
+  if(!subj)return alert('Введите предмет');
+  const data={subject:subj,type:document.getElementById('fType').value,start:document.getElementById('fStart').value,end:document.getElementById('fEnd').value,teacher:document.getElementById('fTeach').value.trim(),room:document.getElementById('fRoom').value.trim(),note:document.getElementById('fNote').value.trim()};
+  if(editId){const x=ev.find(e=>e.id===editId);Object.assign(x,data)}
+  else ev.push(Object.assign({id:Date.now()+''+Math.floor(Math.random()*999),date:editDate},data));
+  save();closeAll();render();
+}
+function delLesson(){if(!editId)return;ev=ev.filter(e=>e.id!==editId);save();closeAll();render()}
+
+/* ---------- время пар ---------- */
+let tmpPairs=[];
+function openPairs(){tmpPairs=JSON.parse(JSON.stringify(pairs));renderPairRows();show('mPairs')}
+function renderPairRows(){
+  document.getElementById('pairList').innerHTML=tmpPairs.map((p,i)=>'<div class="pairrow"><span class="n">'+p.n+'-я</span><input type="time" value="'+p.start+'" onchange="tmpPairs['+i+'].start=this.value"><input type="time" value="'+p.end+'" onchange="tmpPairs['+i+'].end=this.value"><button class="x" onclick="tmpPairs.splice('+i+',1);renderPairRows()">✕</button></div>').join('');
+}
+function addPairRow(){const n=tmpPairs.length?Math.max(...tmpPairs.map(p=>p.n))+1:1;tmpPairs.push({n:n,start:'09:00',end:'10:30'});renderPairRows()}
+function savePairs(){tmpPairs.sort((a,b)=>a.n-b.n);pairs=tmpPairs;save();closeAll();render()}
+
+/* ---------- импорт ---------- */
+const ICONS=/[\u{1F000}-\u{1FAFF}\u{2190}-\u{21FF}\u{2600}-\u{27BF}\u{E000}-\u{F8FF}\u{FE0F}]/gu;
+function openImport(){document.getElementById('impText').value='';document.getElementById('impmsg').style.display='none';show('mImp')}
+function parseImport(text){
+  const lines=text.split('\n').map(l=>l.replace(ICONS,'').replace(/\s+/g,' ').trim()).filter(Boolean);
+  const mon=monday(off),weekDates=DAYS.map((_,i)=>{const d=new Date(mon);d.setDate(d.getDate()+i);return iso(d)});
+  const dayRe=/^(пн|понедельник|вт|вторник|ср|сред[ау]|чт|четверг|пт|пятниц[ау]|сб|суббот[ау]|вс|воскресенье)\b/i;
+  const idx={'понедельник':0,'пн':0,'вторник':1,'вт':1,'среда':2,'среду':2,'ср':2,'четверг':3,'чт':3,'пятница':4,'пятницу':4,'пт':4,'суббота':5,'субботу':5,'сб':5,'воскресенье':6,'вс':6};
+  let cur=null,entry=null;const out=[];
+  const fin=()=>{if(entry&&entry.bufLines.length)out.push({date:cur,bufLines:entry.bufLines,start:entry.start,end:entry.end});entry=null};
+  for(const line of lines){
+    const dm=line.match(dayRe),dt=line.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+    if(dm){fin();cur=dt?new Date(+dt[3],+dt[2]-1,+dt[1])? iso(new Date(+dt[3],+dt[2]-1,+dt[1])) : weekDates[idx[dm[1].toLowerCase()]] : weekDates[idx[dm[1].toLowerCase()]];continue}
+    const tms=line.match(/\b\d{1,2}:\d{2}\b/g);
+    if(tms&&tms.length){
+      fin();
+      const rest=line.replace(/\b\d{1,2}:\d{2}\b/g,'').replace(/^[—–\-:;\s]+/,'').trim();
+      entry={start:tms[0],end:tms[1]||null,bufLines:rest?[rest]:[]};continue;
+    }
+    if(entry&&!entry.end&&/^\d{1,2}:\d{2}$/.test(line)){entry.end=line;continue}
+    if(entry)entry.bufLines.push(line);
+  }
+  fin();
+  const res=[];
+  for(const e of out){
+    if(!e.date){continue}
+    const bl=e.bufLines.filter(l=>l&&!/^\d+\s*[-–—]?\s*е\s*занятие/i.test(l));
+    let subject='',type='',room='',teacher='';
+    const roomM=bl.join(' | ').match(/Аудитория[:\s]*([A-Za-zА-Яа-я0-9\-\.\/]+)/i);
+    if(roomM)room=roomM[1];
+    let first=bl[0]||'';
+    const tM=first.match(/^(лаб(?:ораторн\w*)?|лек(?:ци\w*)?|практ\w*|пр\b|конс\w*|сем(?:инар)?)/i);
+    if(tM){type=/^лаб/i.test(tM[1])?'лаб':/^лек/i.test(tM[1])?'лек':/^конс/i.test(tM[1])?'конс':'пр';subject=first.slice(tM[0].length).replace(/^[\s,\-–—]+/,'')}
+    else subject=first;
+    subject=subject.replace(/,?\s*п\/г\s*\d+/gi,'').replace(/[,\s]+$/,'').trim();
+    for(let i=1;i<bl.length;i++){
+      const l=bl[i];
+      if(/Аудитория/i.test(l))continue;
+      if(l===subject)continue;
+      teacher=l.replace(/^(прСПО|асс\.|ассист\.|ст\.?\s?преп\.|доц\.|проф\.|преп\.)\s*/i,'').trim();
+      if(teacher&&!teacher.match(/^\d/))break;else teacher='';
+    }
+    const pnM=bl.join(' ').match(/(\d+)\s*[-–—]?\s*е\s*занятие/i);const pn=pnM?+pnM[1]:null;
+    res.push({date:e.date,subject:subject||'Занятие',type,teacher,room,start:e.start||'',end:e.end||(pn?((pairs.find(p=>p.n===pn)||{}).end||''):'')});
+  }
+  return res;
+}
+function doImport(){
+  const items=parseImport(document.getElementById('impText').value);
+  let added=0,updated=0;
+  for(const it of items){
+    const i=ev.findIndex(x=>x.date===it.date&&x.subject.toLowerCase()===it.subject.toLowerCase());
+    if(i>=0){Object.assign(ev[i],it);updated++}
+    else{ev.push(Object.assign({id:Date.now()+''+Math.floor(Math.random()*999)},it));added++}
+  }
+  save();render();
+  const m=document.getElementById('impmsg');m.style.display='block';
+  m.textContent=items.length?('✅ Добавлено: '+added+', обновлено: '+updated+' (неделя на экране: '+fmt(monday(off))+')'):'😕 Ничего не распозналось — проверьте, что вставлен именно текст недели';
+}
+document.getElementById('fSubj').addEventListener('input',renderChips);
+render();
+</script>
+</body>
+</html>
